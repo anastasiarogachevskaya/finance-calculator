@@ -1,0 +1,24 @@
+// import react-md variable overrides
+@import './variables';
+
+// generate all react-md styles with the custom theme
+@import 'react-md/dist/styles';
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include rmd-theme-dark;
+  }
+}
+
+.container {
+  @include rmd-grid(
+    $phone-columns: 1,
+    $tablet-columns: 2,
+    $desktop-columns: 3,
+    $large-desktop-columns: 4
+  );
+
+  fieldset {
+    display: flex;
+  }
+}
