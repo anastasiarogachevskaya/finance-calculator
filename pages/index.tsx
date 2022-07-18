@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { NextApiRequest } from 'next';
 import React, { useState, ReactElement } from 'react';
 import {
@@ -11,11 +12,8 @@ import {
 	Button,
 	CircularProgress,
 	DialogFooter,
-	Select,
+	AutoComplete,
 } from 'react-md';
-
-import clientPromise from '../utils/mongoDB-util';
-// import axios from 'axios';
 
 interface State {
 	loading: boolean;
@@ -35,8 +33,7 @@ const percentages = [
 	{ label: '100%', value: 1 },
 ];
 
-export default function Home({ isConnected, shops }): ReactElement {
-	// console.log(shops);
+export default function Home({ shops }): ReactElement {
 	const [{ data, loading }, setState] = useState<State>({
 		loading: false,
 		data: null,
@@ -45,6 +42,8 @@ export default function Home({ isConnected, shops }): ReactElement {
 	const [currentPercentage, handlePercentageChange] = useChoice(0.5);
 	const [currentPayer, handlePayerChange] = useChoice('');
 	const [shopName, setShopName] = useState('');
+	const [searchString, setSearchString] = useState<string>('');
+	const [suggestions, setSuggestions] = useState([]);
 	const [amount, setAmount] = useState(0);
 
 	const handleAmountChange = (
@@ -72,7 +71,19 @@ export default function Home({ isConnected, shops }): ReactElement {
 		setDate('');
 	};
 
-	console.log(shops);
+	const onChange = async (text) => {
+		const { data } = await axios(
+			`${process.env.NEXT_PUBLIC_API_HOST}/api/search?q=${text}`
+		);
+		console.log(data);
+		setSuggestions(data?.shops);
+		setSearchString(text);
+	};
+
+	const onSuggestHandler = (text: string) => {
+		setSearchString(text);
+		setSuggestions([]);
+	};
 
 	return (
 		<>
@@ -93,11 +104,12 @@ export default function Home({ isConnected, shops }): ReactElement {
 					value={date}
 					onChange={(e) => setDate(e.target.value)}
 				/>
-				<TextField
+				<AutoComplete
 					id='shop'
-					label='Shop'
-					value={shopName}
-					onChange={(e) => setShopName(e.target.value)}
+					label='Shops'
+					placeholder='Search for a shop'
+					data={suggestions}
+					onChange={(e) => onChange(e.target.value)}
 				/>
 				<TextField
 					id='amount'
@@ -169,23 +181,4 @@ export default function Home({ isConnected, shops }): ReactElement {
 			</Form>
 		</>
 	);
-}
-
-export async function getServerSideProps() {
-	try {
-		const client = await clientPromise;
-		const db = client.db('finance');
-		const shops = await db.collection('shops').find({}).toArray();
-		return {
-			props: {
-				isConnected: true,
-				shops: JSON.stringify(shops),
-			},
-		};
-	} catch (e) {
-		console.error(e);
-		return {
-			props: { isConnected: false },
-		};
-	}
 }
